@@ -1,7 +1,7 @@
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
-    id("org.jetbrains.kotlin.jvm")
+    id("java")
     id("org.jetbrains.changelog")
     id("org.jetbrains.intellij.platform")
 }
@@ -12,7 +12,7 @@ dependencies {
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
-        intellijIdea("2025.3.5")
+        intellijIdea("2026.1")
         testFramework(TestFrameworkType.Platform)
 
         // Add plugin dependencies for compilation here, for example:
