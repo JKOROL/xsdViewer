@@ -103,30 +103,17 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
             NodeList rootElements = doc.getDocumentElement().getChildNodes();
             for (int i = 0; i < rootElements.getLength(); i++) {
                 Node node = rootElements.item(i);
-                if (node instanceof Element element) {
-                    if ("element".equals(element.getLocalName())) {
-                        processElement(element, null, context);
-                    } else if ("complexType".equals(element.getLocalName())) {
-                        String name = element.getAttribute("name");
-                        if (!name.isEmpty()) {
-                            String typeId = cleanId(name);
-                            if (!processedNodes.contains(typeId)) {
-                                processedNodes.add(typeId);
-                                sb.append("  ").append(typeId).append("[[\"").append(name).append("\"]]\n");
-                                sb.append("  style ").append(typeId).append(" fill:#f9f,stroke:#333,stroke-width:2px\n");
-                                processComplexType(element, typeId, context);
-                            }
-                        }
-                    }
+                if (node instanceof Element element && "element".equals(element.getLocalName())) {
+                    processElement(element, null, context);
                 }
             }
 
         } catch (Exception e) {
-            sb.append("  Error[Parsing Error: ").append(e.getMessage() != null ? (e.getMessage().length() > 50 ? e.getMessage().substring(0, 50) : e.getMessage()) : "unknown").append("]\n");
+            sb.append("  Error(\"Parsing Error: ").append(e.getMessage() != null ? (e.getMessage().length() > 50 ? e.getMessage().substring(0, 50) : e.getMessage()) : "unknown").append("\")\n");
         }
 
         if (sb.length() <= 9) {
-            sb.append("  NoElementsFound[No top-level elements found]\n");
+            sb.append("  NoElementsFound(\"No top-level elements found\")\n");
         }
 
         return sb.toString();
@@ -157,33 +144,33 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
         String displayName = !name.isEmpty() ? name : (!ref.isEmpty() ? ref.substring(ref.indexOf(':') + 1) : "unknown");
         String elementId = cleanId((parentId != null ? parentId : "") + "_" + displayName);
 
-        context.sb.append("  ").append(elementId).append("(\"").append(displayName).append("\")\n");
-        if (parentId != null) {
-            context.sb.append("  ").append(parentId).append(" -- contains --> ").append(elementId).append("\n");
+        if (ref.isEmpty()) {
+            context.sb.append("  ").append(elementId).append("(\"").append(displayName).append("\")\n");
+            if (parentId != null) {
+                context.sb.append("  ").append(parentId).append(" --> ").append(elementId).append("\n");
+            }
+        } else {
+            // If it's a ref, we want to use the parent's ID to point to the referenced element's ID
+            String refName = ref.contains(":") ? ref.substring(ref.indexOf(':') + 1) : ref;
+            String refId = cleanId(refName);
+            context.sb.append("  ").append(refId).append("(\"").append(refName).append("\")\n");
+            if (parentId != null) {
+                context.sb.append("  ").append(parentId).append(" --> ").append(refId).append("\n");
+            }
+            // Update elementId so that nested content (if any, though rare for ref) points from refId
+            elementId = refId;
         }
 
         String typeAttr = element.getAttribute("type");
         String type = typeAttr.contains(":") ? typeAttr.substring(typeAttr.indexOf(':') + 1) : typeAttr;
         
         if (!type.isEmpty()) {
-            String typeId = cleanId(type);
-            context.sb.append("  ").append(elementId).append(" -. type .-> ").append(typeId).append("\n");
-
-            if (context.complexTypeMap.containsKey(type) && !context.processedNodes.contains(typeId)) {
-                context.processedNodes.add(typeId);
-                context.sb.append("  ").append(typeId).append("[[\"").append(type).append("\"]]\n");
-                context.sb.append("  style ").append(typeId).append(" fill:#f9f,stroke:#333,stroke-width:2px\n");
-                processComplexType(context.complexTypeMap.get(type), typeId, context);
-            } else if (context.simpleTypeMap.containsKey(type) && !context.processedNodes.contains(typeId)) {
-                context.processedNodes.add(typeId);
-                context.sb.append("  ").append(typeId).append("([\"").append(type).append("\"])\n");
-                context.sb.append("  style ").append(typeId).append(" fill:#eef,stroke:#33f,stroke-width:1px\n");
+            if (context.complexTypeMap.containsKey(type)) {
+                processComplexType(context.complexTypeMap.get(type), elementId, context);
+            } else if (context.simpleTypeMap.containsKey(type)) {
+                context.sb.append("  style ").append(elementId).append(" fill:#eef,stroke:#33f,stroke-width:1px\n");
             }
-        } else if (!ref.isEmpty()) {
-            String refName = ref.contains(":") ? ref.substring(ref.indexOf(':') + 1) : ref;
-            String refId = cleanId(refName);
-            context.sb.append("  ").append(elementId).append(" -. ref .-> ").append(refId).append("\n");
-        } else {
+        } else if (ref.isEmpty()) {
             NodeList ctNodes = element.getElementsByTagNameNS("*", "complexType");
             if (ctNodes.getLength() > 0) {
                 processComplexType((Element) ctNodes.item(0), elementId, context);
@@ -197,14 +184,20 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
     }
 
     private void processComplexType(Element ctElement, String parentId, ParserContext context) {
+        String ctName = ctElement.getAttribute("name");
+        String processingKey = parentId + ":" + (ctName.isEmpty() ? "anonymous" : ctName);
+        if (context.processedNodes.contains(processingKey)) {
+            return;
+        }
+        context.processedNodes.add(processingKey);
+
         NodeList extensions = ctElement.getElementsByTagNameNS("*", "extension");
         for (int i = 0; i < extensions.getLength(); i++) {
             Element extension = (Element) extensions.item(i);
             String baseAttr = extension.getAttribute("base");
             String base = baseAttr.contains(":") ? baseAttr.substring(baseAttr.indexOf(':') + 1) : baseAttr;
-            if (!base.isEmpty()) {
-                String baseId = cleanId(base);
-                context.sb.append("  ").append(parentId).append(" -- extends --> ").append(baseId).append("\n");
+            if (!base.isEmpty() && context.complexTypeMap.containsKey(base)) {
+                processComplexType(context.complexTypeMap.get(base), parentId, context);
             }
         }
 
@@ -213,9 +206,8 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
             Element restriction = (Element) restrictions.item(i);
             String baseAttr = restriction.getAttribute("base");
             String base = baseAttr.contains(":") ? baseAttr.substring(baseAttr.indexOf(':') + 1) : baseAttr;
-            if (!base.isEmpty() && !baseAttr.startsWith("xsd:")) {
-                String baseId = cleanId(base);
-                context.sb.append("  ").append(parentId).append(" -- restricts --> ").append(baseId).append("\n");
+            if (!base.isEmpty() && context.complexTypeMap.containsKey(base)) {
+                processComplexType(context.complexTypeMap.get(base), parentId, context);
             }
         }
 
@@ -239,7 +231,7 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
             if (!attrName.isEmpty()) {
                 String attrId = cleanId(parentId + "_attr_" + attrName);
                 context.sb.append("  ").append(attrId).append("(\"@").append(attrName).append("\")\n");
-                context.sb.append("  ").append(parentId).append(" -- attribute --> ").append(attrId).append("\n");
+                context.sb.append("  ").append(parentId).append(" --> ").append(attrId).append("\n");
                 context.sb.append("  style ").append(attrId).append(" fill:#eee,stroke:#999,stroke-dasharray: 5 5\n");
             }
         }
