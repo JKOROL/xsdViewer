@@ -28,6 +28,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="MyToolWindow" factoryClass="com.korol.MyToolWindowFactory"
                     icon="AllIcons.Toolwindows.ToolWindowPalette"/>
+        <fileEditorProvider implementation="com.korol.XsdFileEditorProvider"/>
     </extensions>
 
 </idea-plugin>
