@@ -1,12 +1,55 @@
-<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M32.0845 7.94025V4H24.0203V7.9896H16.029V4H7.91553V7.94025H4V36H16.0044V32.0045C16.0058 30.9457 16.4274 29.9308 17.1766 29.1826C17.9258 28.4345 18.9412 28.0143 20 28.0143C21.0588 28.0143 22.0743 28.4345 22.8234 29.1826C23.5726 29.9308 23.9942 30.9457 23.9956 32.0045V36H36V7.94025H32.0845Z"
-          fill="url(#paint0_linear)"/>
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" id="XsdTreeLogo" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     x="0px" y="0px" viewBox="0 0 500 500" style="enable-background:new 0 0 500 500;" xml:space="preserve">
+<style type="text/css">
+    .bg { fill: #F4F8F9; }
+    .bracket { fill: none; stroke: #4A90A4; stroke-width: 24; stroke-linecap: round; stroke-linejoin: round; }
+    .trunk { fill: none; stroke: #2D6A7F; stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }
+    .branch { fill: none; stroke: #2D6A7F; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+    .node-main { fill: url(#gradMain); stroke: #2D6A7F; stroke-width: 6; }
+    .node-trunk { fill: url(#gradTrunk); stroke: #2D6A7F; stroke-width: 5; }
+    .node-leaf { fill: #3D849A; stroke: #1F4E5E; stroke-width: 4; }
+</style>
+
     <defs>
-        <linearGradient id="paint0_linear" x1="2.94192" y1="4.89955" x2="37.7772" y2="39.7345"
-                        gradientUnits="userSpaceOnUse">
-            <stop offset="0.15937" stop-color="#3BEA62"/>
-            <stop offset="0.5404" stop-color="#3C99CC"/>
-            <stop offset="0.93739" stop-color="#6B57FF"/>
-        </linearGradient>
-    </defs>
+    <linearGradient id="gradMain" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#5FA3B1;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#3A7887;stop-opacity:1" />
+    </linearGradient>
+        <linearGradient id="gradTrunk" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#92C78E;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#5B9E6C;stop-opacity:1" />
+    </linearGradient>
+</defs>
+
+    <rect class="bg" width="500" height="500" rx="30" />
+
+    <g transform="translate(0, 5)">
+    <path class="bracket" d="M 110,210 L 60,250 L 110,290" />
+
+        <path class="bracket" d="M 390,210 L 440,250 L 390,290" />
+
+        <line class="trunk" x1="250" y1="120" x2="250" y2="330" />
+
+        <path class="branch" d="M 250,330 L 160,390 L 140,420" />
+        <path class="branch" d="M 250,330 L 210,400" />
+        <path class="branch" d="M 250,330 L 290,400" />
+        <path class="branch" d="M 250,330 L 340,390 L 360,420" />
+
+        <circle class="node-trunk" cx="250" cy="175" r="15" />
+        <circle class="node-trunk" cx="250" cy="240" r="15" />
+        <circle class="node-trunk" cx="250" cy="310" r="15" />
+
+        <circle class="node-leaf" cx="160" cy="390" r="14" />
+        <circle class="node-leaf" cx="140" cy="420" r="12" />
+
+        <circle class="node-leaf" cx="210" cy="420" r="13" />
+
+        <circle class="node-leaf" cx="290" cy="420" r="13" />
+
+        <circle class="node-leaf" cx="340" cy="390" r="14" />
+        <circle class="node-leaf" cx="360" cy="420" r="12" />
+
+        <circle class="node-main" cx="250" cy="95" r="32" />
+</g>
 </svg>
