@@ -8,7 +8,7 @@
     <name>XsdViewer</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor url="https://www.yourcompany.com">YourCompany</vendor>
+    <vendor url="https://korol.fr">Jonathan Korol</vendor>
 
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
@@ -26,9 +26,8 @@
     <!-- Extensions defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="MyToolWindow" factoryClass="fr.korol.MyToolWindowFactory"
-                    icon="AllIcons.Toolwindows.ToolWindowPalette"/>
         <fileEditorProvider implementation="fr.korol.XsdFileEditorProvider"/>
+        <toolWindow id="XSD Search Results" anchor="bottom" factoryClass="fr.korol.XsdSearchToolWindowFactory"/>
     </extensions>
 
 </idea-plugin>

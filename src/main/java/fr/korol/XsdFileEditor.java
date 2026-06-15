@@ -7,19 +7,29 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.UserDataHolderBase;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.ScrollPaneFactory;
+import com.intellij.ui.SearchTextField;
 import com.intellij.ui.treeStructure.Tree;
+import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.openapi.wm.ToolWindowManager;
 import fr.korol.model.XsdModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+import java.awt.*;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 
 public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
     private final Project project;
     private final VirtualFile file;
     private final JComponent component;
+    private Tree tree;
 
     public XsdFileEditor(@NotNull Project project, @NotNull VirtualFile file) {
         this.project = project;
@@ -41,14 +51,121 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
             }
 
             XsdTreeNode rootNode = XsdTreeNode.createTree(model, rootName);
-            Tree tree = new Tree(new DefaultTreeModel(rootNode));
+            tree = new Tree(new DefaultTreeModel(rootNode));
             tree.setRootVisible(true);
             tree.setCellRenderer(new XsdTreeNode.XsdTreeCellRenderer());
 
-            return ScrollPaneFactory.createScrollPane(tree);
+            JPanel panel = new JPanel(new BorderLayout());
+            SearchTextField searchTextField = new SearchTextField();
+            searchTextField.addKeyboardListener(new java.awt.event.KeyAdapter() {
+                @Override
+                public void keyPressed(java.awt.event.KeyEvent e) {
+                    if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
+                        performSearch(searchTextField.getText());
+                    }
+                }
+            });
+
+            panel.add(searchTextField, BorderLayout.NORTH);
+            panel.add(ScrollPaneFactory.createScrollPane(tree), BorderLayout.CENTER);
+
+            searchTextField.setToolTipText("Search and press Enter");
+
+            return panel;
         } catch (Exception e) {
             return new JLabel("Error reading file: " + e.getMessage());
         }
+    }
+
+    private void performSearch(String text) {
+        if (text == null || text.isEmpty() || tree == null) return;
+
+        List<XsdTreeNode> results = new ArrayList<>();
+        XsdTreeNode root = (XsdTreeNode) tree.getModel().getRoot();
+        searchNodes(root, text.toLowerCase(), results);
+
+        if (results.isEmpty()) {
+            JOptionPane.showMessageDialog(component, "No results found for: " + text);
+            return;
+        }
+
+        showSearchResults(results, text);
+    }
+
+    private void searchNodes(XsdTreeNode node, String text, List<XsdTreeNode> results) {
+        if (node.getDisplayName().toLowerCase().contains(text)) {
+            results.add(node);
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            searchNodes((XsdTreeNode) node.getChildAt(i), text, results);
+        }
+    }
+
+    private void showSearchResults(List<XsdTreeNode> results, String query) {
+        ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(XsdSearchToolWindowFactory.TOOL_WINDOW_ID);
+        if (toolWindow != null) {
+            XsdSearchToolWindowFactory.showResults(project, toolWindow, results, query, this);
+        } else {
+            // Fallback to JDialog if tool window is not found
+            JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(component), "Search Results: " + query);
+            dialog.setLayout(new BorderLayout());
+
+            DefaultListModel<XsdTreeNode> listModel = new DefaultListModel<>();
+            for (XsdTreeNode node : results) {
+                listModel.addElement(node);
+            }
+
+            JList<XsdTreeNode> list = new JList<>(listModel);
+            list.setCellRenderer(new DefaultListCellRenderer() {
+                @Override
+                public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                    if (value instanceof XsdTreeNode node) {
+                        StringBuilder pathBuilder = new StringBuilder();
+                        TreeNode[] path = node.getPath();
+                        for (int i = 0; i < path.length; i++) {
+                            if (path[i] instanceof XsdTreeNode pNode) {
+                                pathBuilder.append(pNode.getDisplayName());
+                                if (i < path.length - 1) {
+                                    pathBuilder.append("/");
+                                }
+                            }
+                        }
+                        setText(pathBuilder.toString() + (node.getType() != null ? " : " + node.getType() : ""));
+                    }
+                    return this;
+                }
+            });
+
+            list.addListSelectionListener(e -> {
+                if (!e.getValueIsAdjusting()) {
+                    XsdTreeNode selected = list.getSelectedValue();
+                    if (selected != null) {
+                        focusOnNode(selected);
+                    }
+                }
+            });
+
+            dialog.add(ScrollPaneFactory.createScrollPane(list), BorderLayout.CENTER);
+            dialog.setSize(400, 300);
+            dialog.setLocationRelativeTo(component);
+            dialog.setVisible(true);
+        }
+    }
+
+    public void focusOnNode(XsdTreeNode node) {
+        TreeNode[] nodes = node.getPath();
+        TreePath path = new TreePath(nodes);
+        
+        // Ensure all parent nodes are expanded
+        for (int i = 0; i < nodes.length - 1; i++) {
+            TreeNode[] parentNodes = new TreeNode[i + 1];
+            System.arraycopy(nodes, 0, parentNodes, 0, i + 1);
+            tree.expandPath(new TreePath(parentNodes));
+        }
+
+        tree.setSelectionPath(path);
+        tree.scrollPathToVisible(path);
     }
 
     @Override
