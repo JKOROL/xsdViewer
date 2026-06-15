@@ -6,6 +6,7 @@ public class XsdElement {
     private final String ref;
     private final String minOccurs;
     private final String maxOccurs;
+    private String documentation;
     private XsdComplexType anonymousType;
 
     public XsdElement(String name, String type, String ref, String minOccurs, String maxOccurs) {
@@ -42,5 +43,13 @@ public class XsdElement {
 
     public void setAnonymousType(XsdComplexType anonymousType) {
         this.anonymousType = anonymousType;
+    }
+
+    public String getDocumentation() {
+        return documentation;
+    }
+
+    public void setDocumentation(String documentation) {
+        this.documentation = documentation;
     }
 }

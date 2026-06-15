@@ -17,14 +17,16 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
     private final String minOccurs;
     private final String maxOccurs;
     private final boolean required;
+    private final String documentation;
 
-    public XsdTreeNode(String displayName, String type, boolean isAttribute, String minOccurs, String maxOccurs, boolean required) {
+    public XsdTreeNode(String displayName, String type, boolean isAttribute, String minOccurs, String maxOccurs, boolean required, String documentation) {
         this.displayName = displayName;
         this.type = type;
         this.isAttribute = isAttribute;
         this.minOccurs = minOccurs;
         this.maxOccurs = maxOccurs;
         this.required = required;
+        this.documentation = documentation;
     }
 
     public static XsdTreeNode createTree(XsdModel model, String rootElementName) {
@@ -34,7 +36,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
         }
 
         if (rootElement == null) {
-            return new XsdTreeNode("No root element found", null, false, null, null, false);
+            return new XsdTreeNode("No root element found", null, false, null, null, false, null);
         }
 
         return processElement(rootElement, model, 0, new HashSet<>());
@@ -42,7 +44,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
 
     private static XsdTreeNode processElement(XsdElement element, XsdModel model, int depth, Set<String> visitedTypes) {
         if (depth > 15) {
-            return new XsdTreeNode("... (max depth)", null, false, null, null, false);
+            return new XsdTreeNode("... (max depth)", null, false, null, null, false, null);
         }
 
         String name = element.getName();
@@ -53,6 +55,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
         XsdComplexType anonymousType = element.getAnonymousType();
 
         String displayName = (name != null && !name.isEmpty()) ? name : (ref != null && !ref.isEmpty() ? stripNamespace(ref) : "unknown");
+        String documentation = element.getDocumentation();
 
         if (ref != null && !ref.isEmpty()) {
             String refName = stripNamespace(ref);
@@ -63,10 +66,21 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
                 } else if (globalEl.getAnonymousType() != null) {
                     anonymousType = globalEl.getAnonymousType();
                 }
+                if (documentation == null || documentation.isEmpty()) {
+                    documentation = globalEl.getDocumentation();
+                }
             }
         }
 
-        XsdTreeNode node = new XsdTreeNode(displayName, type, false, minOccurs, maxOccurs, false);
+        if (documentation == null || documentation.isEmpty()) {
+            if (type != null && model.getComplexTypes().containsKey(type)) {
+                documentation = model.getComplexTypes().get(type).getDocumentation();
+            } else if (type != null && model.getSimpleTypes().containsKey(type)) {
+                documentation = model.getSimpleTypes().get(type).getDocumentation();
+            }
+        }
+
+        XsdTreeNode node = new XsdTreeNode(displayName, type, false, minOccurs, maxOccurs, false, documentation);
 
         if (type != null && !type.isEmpty()) {
             if (model.getComplexTypes().containsKey(type)) {
@@ -75,7 +89,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
                     addComplexTypeChildren(node, model.getComplexTypes().get(type), model, depth + 1, visitedTypes);
                     visitedTypes.remove(type);
                 } else {
-                    node.add(new XsdTreeNode("(cyclic " + type + ")", null, false, null, null, false));
+                    node.add(new XsdTreeNode("(cyclic " + type + ")", null, false, null, null, false, null));
                 }
             }
         } else if (anonymousType != null) {
@@ -96,7 +110,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
         }
 
         for (XsdAttribute attr : complexType.getAttributes()) {
-            node.add(new XsdTreeNode("@" + attr.getName(), attr.getType(), true, null, null, attr.isRequired()));
+            node.add(new XsdTreeNode("@" + attr.getName(), attr.getType(), true, null, null, attr.isRequired(), attr.getDocumentation()));
         }
 
         for (XsdElement nested : complexType.getElements()) {
@@ -131,6 +145,10 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
 
     public boolean isRequired() {
         return required;
+    }
+
+    public String getDocumentation() {
+        return documentation;
     }
 
     public boolean isMandatory() {

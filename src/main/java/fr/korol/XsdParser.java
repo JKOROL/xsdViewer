@@ -74,6 +74,7 @@ public class XsdParser {
             String name = ct.getAttribute("name");
             if (!name.isEmpty()) {
                 XsdComplexType complexType = new XsdComplexType(name);
+                complexType.setDocumentation(extractDocumentation(ct));
                 model.addComplexType(complexType);
             }
         }
@@ -83,7 +84,9 @@ public class XsdParser {
             Element st = (Element) simpleTypes.item(i);
             String name = st.getAttribute("name");
             if (!name.isEmpty()) {
-                model.addSimpleType(new XsdSimpleType(name));
+                XsdSimpleType simpleType = new XsdSimpleType(name);
+                simpleType.setDocumentation(extractDocumentation(st));
+                model.addSimpleType(simpleType);
             }
         }
 
@@ -137,7 +140,9 @@ public class XsdParser {
             if (!attrName.isEmpty()) {
                 String attrType = stripNamespace(attr.getAttribute("type"));
                 boolean required = "required".equals(attr.getAttribute("use"));
-                complexType.addAttribute(new XsdAttribute(attrName, attrType, required));
+                XsdAttribute xsdAttribute = new XsdAttribute(attrName, attrType, required);
+                xsdAttribute.setDocumentation(extractDocumentation(attr));
+                complexType.addAttribute(xsdAttribute);
             }
         }
     }
@@ -151,6 +156,7 @@ public class XsdParser {
         String maxOccurs = element.getAttribute("maxOccurs");
 
         XsdElement xsdElement = new XsdElement(name, type, ref, minOccurs, maxOccurs);
+        xsdElement.setDocumentation(extractDocumentation(element));
 
         NodeList ctNodes = element.getElementsByTagNameNS("*", "complexType");
         if (ctNodes.getLength() > 0) {
@@ -165,6 +171,43 @@ public class XsdParser {
     private String stripNamespace(String value) {
         if (value == null) return "";
         return value.contains(":") ? value.substring(value.indexOf(':') + 1) : value;
+    }
+
+    private String extractDocumentation(Element element) {
+        NodeList annotations = element.getElementsByTagNameNS("*", "annotation");
+        if (annotations.getLength() > 0) {
+            Element annotation = (Element) annotations.item(0);
+            NodeList docs = annotation.getElementsByTagNameNS("*", "documentation");
+            if (docs.getLength() > 0) {
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < docs.getLength(); i++) {
+                    Element doc = (Element) docs.item(i);
+                    String definition = getChildTagContent(doc, "Definition");
+                    String examples = getChildTagContent(doc, "Examples");
+
+                    if (definition != null || examples != null) {
+                        if (definition != null) {
+                            sb.append("Definition: ").append(definition).append("\n");
+                        }
+                        if (examples != null) {
+                            sb.append("Examples: ").append(examples).append("\n");
+                        }
+                    } else {
+                        sb.append(doc.getTextContent().trim()).append("\n");
+                    }
+                }
+                return sb.toString().trim();
+            }
+        }
+        return null;
+    }
+
+    private String getChildTagContent(Element element, String tagName) {
+        NodeList list = element.getElementsByTagNameNS("*", tagName);
+        if (list.getLength() > 0) {
+            return list.item(0).getTextContent().trim();
+        }
+        return null;
     }
 
     private boolean isDirectChildOf(Element element, Element parent) {

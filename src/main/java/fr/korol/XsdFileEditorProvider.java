@@ -22,7 +22,7 @@ public class XsdFileEditorProvider implements FileEditorProvider, DumbAware {
 
     @Override
     public @NotNull @NonNls String getEditorTypeId() {
-        return "xsd-graph-editor";
+        return "xsd-tree-editor";
     }
 
     @Override

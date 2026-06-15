@@ -51,7 +51,18 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
             }
 
             XsdTreeNode rootNode = XsdTreeNode.createTree(model, rootName);
-            tree = new Tree(new DefaultTreeModel(rootNode));
+            tree = new Tree(new DefaultTreeModel(rootNode)) {
+                @Override
+                public String getToolTipText(java.awt.event.MouseEvent event) {
+                    if (getRowForLocation(event.getX(), event.getY()) == -1) return null;
+                    TreePath path = getPathForLocation(event.getX(), event.getY());
+                    if (path != null && path.getLastPathComponent() instanceof XsdTreeNode node) {
+                        return node.getDocumentation();
+                    }
+                    return super.getToolTipText(event);
+                }
+            };
+            ToolTipManager.sharedInstance().registerComponent(tree);
             tree.setRootVisible(true);
             tree.setCellRenderer(new XsdTreeNode.XsdTreeCellRenderer());
 
