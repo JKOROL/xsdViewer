@@ -27,7 +27,7 @@
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
         <fileEditorProvider implementation="fr.korol.XsdFileEditorProvider"/>
-        <toolWindow id="XSD Search Results" anchor="bottom" factoryClass="fr.korol.XsdSearchToolWindowFactory"/>
+        <toolWindow id="XSD Search Results" anchor="bottom" factoryClass="fr.korol.XsdSearchToolWindowFactory" icon="AllIcons.Actions.Search"/>
     </extensions>
 
 </idea-plugin>

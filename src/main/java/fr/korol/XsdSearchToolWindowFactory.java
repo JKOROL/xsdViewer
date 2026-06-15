@@ -1,5 +1,6 @@
 package fr.korol;
 
+import com.intellij.icons.AllIcons;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
@@ -19,7 +20,7 @@ public class XsdSearchToolWindowFactory implements ToolWindowFactory {
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        // Content will be added dynamically when a search is performed
+        toolWindow.setIcon(AllIcons.Actions.Search);
     }
 
     public static void showResults(@NotNull Project project, @NotNull ToolWindow toolWindow, @NotNull List<XsdTreeNode> results, @NotNull String query, @NotNull XsdFileEditor editor) {
