@@ -36,7 +36,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
         }
 
         if (rootElement == null) {
-            return new XsdTreeNode("No root element found", null, false, null, null, false, null);
+            return new XsdTreeNode(MyMessageBundle.message("editor.noroot"), null, false, null, null, false, null);
         }
 
         return processElement(rootElement, model, 0, new HashSet<>());
@@ -44,7 +44,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
 
     private static XsdTreeNode processElement(XsdElement element, XsdModel model, int depth, Set<String> visitedTypes) {
         if (depth > 15) {
-            return new XsdTreeNode("... (max depth)", null, false, null, null, false, null);
+            return new XsdTreeNode(MyMessageBundle.message("editor.depth",depth), null, false, null, null, false, null);
         }
 
         String name = element.getName();
@@ -89,7 +89,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
                     addComplexTypeChildren(node, model.getComplexTypes().get(type), model, depth + 1, visitedTypes);
                     visitedTypes.remove(type);
                 } else {
-                    node.add(new XsdTreeNode("(cyclic " + type + ")", null, false, null, null, false, null));
+                    node.add(new XsdTreeNode(MyMessageBundle.message("editor.cyclic",type), null, false, null, null, false, null));
                 }
             }
         } else if (anonymousType != null) {

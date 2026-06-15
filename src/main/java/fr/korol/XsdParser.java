@@ -187,10 +187,10 @@ public class XsdParser {
 
                     if (definition != null || examples != null) {
                         if (definition != null) {
-                            sb.append("Definition: ").append(definition).append("\n");
+                            sb.append(MyMessageBundle.message("tooltip.definition",definition)).append("\n");
                         }
                         if (examples != null) {
-                            sb.append("Examples: ").append(examples).append("\n");
+                            sb.append(MyMessageBundle.message("tooltip.examples",examples)).append("\n");
                         }
                     } else {
                         sb.append(doc.getTextContent().trim()).append("\n");
