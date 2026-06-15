@@ -62,11 +62,11 @@ public class XsdSearchToolWindowFactory implements ToolWindowFactory {
             }
         });
 
-        panel.add(new JLabel("Results for: " + query), BorderLayout.NORTH);
+        panel.add(new JLabel(MyMessageBundle.message("search.results.for", query)), BorderLayout.NORTH);
         panel.add(ScrollPaneFactory.createScrollPane(list), BorderLayout.CENTER);
 
         ContentFactory contentFactory = ContentFactory.getInstance();
-        Content content = contentFactory.createContent(panel, "Search: " + query, false);
+        Content content = contentFactory.createContent(panel, MyMessageBundle.message("search.tab.title", query), false);
         
         toolWindow.getContentManager().removeAllContents(true);
         toolWindow.getContentManager().addContent(content);

@@ -80,11 +80,11 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
             panel.add(searchTextField, BorderLayout.NORTH);
             panel.add(ScrollPaneFactory.createScrollPane(tree), BorderLayout.CENTER);
 
-            searchTextField.setToolTipText("Search and press Enter");
+            searchTextField.setToolTipText(MyMessageBundle.message("search.placeholder"));
 
             return panel;
         } catch (Exception e) {
-            return new JLabel("Error reading file: " + e.getMessage());
+            return new JLabel(MyMessageBundle.message("error.reading.file", e.getMessage()));
         }
     }
 
@@ -96,7 +96,7 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
         searchNodes(root, text.toLowerCase(), results);
 
         if (results.isEmpty()) {
-            JOptionPane.showMessageDialog(component, "No results found for: " + text);
+            JOptionPane.showMessageDialog(component, MyMessageBundle.message("search.no.results", text));
             return;
         }
 
@@ -118,7 +118,7 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
             XsdSearchToolWindowFactory.showResults(project, toolWindow, results, query, this);
         } else {
             // Fallback to JDialog if tool window is not found
-            JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(component), "Search Results: " + query);
+            JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(component), MyMessageBundle.message("search.results.title", query));
             dialog.setLayout(new BorderLayout());
 
             DefaultListModel<XsdTreeNode> listModel = new DefaultListModel<>();
@@ -191,7 +191,7 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
 
     @Override
     public @NotNull String getName() {
-        return "XSD Tree";
+        return MyMessageBundle.message("editor.name");
     }
 
     @Override
