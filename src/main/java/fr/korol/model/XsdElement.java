@@ -4,12 +4,16 @@ public class XsdElement {
     private final String name;
     private final String type;
     private final String ref;
+    private final String minOccurs;
+    private final String maxOccurs;
     private XsdComplexType anonymousType;
 
-    public XsdElement(String name, String type, String ref) {
+    public XsdElement(String name, String type, String ref, String minOccurs, String maxOccurs) {
         this.name = name;
         this.type = type;
         this.ref = ref;
+        this.minOccurs = minOccurs;
+        this.maxOccurs = maxOccurs;
     }
 
     public String getName() {
@@ -22,6 +26,14 @@ public class XsdElement {
 
     public String getRef() {
         return ref;
+    }
+
+    public String getMinOccurs() {
+        return minOccurs;
+    }
+
+    public String getMaxOccurs() {
+        return maxOccurs;
     }
 
     public XsdComplexType getAnonymousType() {

@@ -6,78 +6,64 @@ import com.intellij.openapi.fileEditor.FileEditorState;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.UserDataHolderBase;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.ui.jcef.JBCefBrowser;
+import com.intellij.ui.ScrollPaneFactory;
+import com.intellij.ui.treeStructure.Tree;
 import fr.korol.model.XsdModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import javax.swing.tree.DefaultTreeModel;
 import java.beans.PropertyChangeListener;
-import java.nio.charset.StandardCharsets;
 
 public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
     private final Project project;
     private final VirtualFile file;
-    private final JBCefBrowser browser;
+    private final JComponent component;
 
     public XsdFileEditor(@NotNull Project project, @NotNull VirtualFile file) {
         this.project = project;
         this.file = file;
-        this.browser = new JBCefBrowser();
-        loadGraph();
+        this.component = createComponent();
     }
 
-    private void loadGraph() {
+    private JComponent createComponent() {
         try {
-            String content = new String(file.contentsToByteArray(), StandardCharsets.UTF_8);
             XsdParser parser = new XsdParser();
-            XsdModel model = parser.parse(content);
-            MermaidGenerator generator = new MermaidGenerator();
-            String mermaidData = generator.generate(model);
+            XsdModel model = parser.parse(file);
+            String rootName = file.getNameWithoutExtension();
+            // Handle UBL naming convention like UBL-ApplicationResponse-2.1 -> ApplicationResponse
+            if (rootName.startsWith("UBL-")) {
+                rootName = rootName.substring(4);
+                if (rootName.contains("-")) {
+                    rootName = rootName.substring(0, rootName.indexOf("-"));
+                }
+            }
 
-            String html = "<!DOCTYPE html>\n" +
-                    "<html>\n" +
-                    "<head>\n" +
-                    "    <script src=\"https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js\"></script>\n" +
-                    "    <script>\n" +
-                    "        mermaid.initialize({ \n" +
-                    "            startOnLoad: true,\n" +
-                    "            flowchart: {\n" +
-                    "                useMaxWidth: false,\n" +
-                    "                htmlLabels: true\n" +
-                    "            }\n" +
-                    "        });\n" +
-                    "    </script>\n" +
-                    "    <style>\n" +
-                    "        body { background-color: white; margin: 20px; }\n" +
-                    "        .mermaid { overflow: auto; }\n" +
-                    "    </style>\n" +
-                    "</head>\n" +
-                    "<body>\n" +
-                    "    <div class=\"mermaid\">\n" +
-                    "        " + mermaidData + "\n" +
-                    "    </div>\n" +
-                    "</body>\n" +
-                    "</html>";
-            browser.loadHTML(html);
+            XsdTreeNode rootNode = XsdTreeNode.createTree(model, rootName);
+            Tree tree = new Tree(new DefaultTreeModel(rootNode));
+            tree.setRootVisible(true);
+            tree.setCellRenderer(new XsdTreeNode.XsdTreeCellRenderer());
+
+            return ScrollPaneFactory.createScrollPane(tree);
         } catch (Exception e) {
-            browser.loadHTML("Error reading file: " + e.getMessage());
+            return new JLabel("Error reading file: " + e.getMessage());
         }
     }
 
     @Override
     public @NotNull JComponent getComponent() {
-        return browser.getComponent();
+        return component;
     }
 
     @Override
     public @Nullable JComponent getPreferredFocusedComponent() {
-        return browser.getComponent();
+        return component;
     }
 
     @Override
     public @NotNull String getName() {
-        return "XSD Graph";
+        return "XSD Tree";
     }
 
     @Override
@@ -106,7 +92,6 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
 
     @Override
     public void dispose() {
-        browser.dispose();
     }
 
     @Override

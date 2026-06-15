@@ -1,5 +1,6 @@
 package fr.korol;
 
+import com.intellij.openapi.vfs.VirtualFile;
 import fr.korol.model.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -10,15 +11,62 @@ import org.xml.sax.InputSource;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.StringReader;
+import java.util.HashSet;
+import java.util.Set;
 
 public class XsdParser {
+    private final Set<String> processedFiles = new HashSet<>();
 
-    public XsdModel parse(String content) throws Exception {
+    public XsdModel parse(VirtualFile file) throws Exception {
         XsdModel model = new XsdModel();
+        processedFiles.clear();
+        parseInternal(file, model);
+        return model;
+    }
+
+    private void parseInternal(VirtualFile file, XsdModel model) throws Exception {
+        if (file == null || !processedFiles.add(file.getPath())) {
+            return;
+        }
+
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new InputSource(new StringReader(content)));
+        Document doc;
+        try (var is = file.getInputStream()) {
+            doc = builder.parse(is);
+        }
+
+        // Handle imports and includes
+        NodeList imports = doc.getElementsByTagNameNS("*", "import");
+        for (int i = 0; i < imports.getLength(); i++) {
+            Element imp = (Element) imports.item(i);
+            String schemaLocation = imp.getAttribute("schemaLocation");
+            if (!schemaLocation.isEmpty()) {
+                VirtualFile parent = file.getParent();
+                if (parent != null) {
+                    VirtualFile importedFile = parent.findFileByRelativePath(schemaLocation);
+                    if (importedFile != null) {
+                        parseInternal(importedFile, model);
+                    }
+                }
+            }
+        }
+
+        NodeList includes = doc.getElementsByTagNameNS("*", "include");
+        for (int i = 0; i < includes.getLength(); i++) {
+            Element inc = (Element) includes.item(i);
+            String schemaLocation = inc.getAttribute("schemaLocation");
+            if (!schemaLocation.isEmpty()) {
+                VirtualFile parent = file.getParent();
+                if (parent != null) {
+                    VirtualFile includedFile = parent.findFileByRelativePath(schemaLocation);
+                    if (includedFile != null) {
+                        parseInternal(includedFile, model);
+                    }
+                }
+            }
+        }
 
         NodeList complexTypes = doc.getElementsByTagNameNS("*", "complexType");
         for (int i = 0; i < complexTypes.getLength(); i++) {
@@ -53,11 +101,10 @@ public class XsdParser {
         for (int i = 0; i < rootElements.getLength(); i++) {
             Node node = rootElements.item(i);
             if (node instanceof Element element && "element".equals(element.getLocalName())) {
-                model.addRootElement(parseElement(element, model));
+                XsdElement xsdElement = parseElement(element, model);
+                model.addGlobalElement(xsdElement);
             }
         }
-
-        return model;
     }
 
     private void fillComplexType(XsdComplexType complexType, Element ctElement, XsdModel model) {
@@ -89,7 +136,8 @@ public class XsdParser {
             String attrName = attr.getAttribute("name");
             if (!attrName.isEmpty()) {
                 String attrType = stripNamespace(attr.getAttribute("type"));
-                complexType.addAttribute(new XsdAttribute(attrName, attrType));
+                boolean required = "required".equals(attr.getAttribute("use"));
+                complexType.addAttribute(new XsdAttribute(attrName, attrType, required));
             }
         }
     }
@@ -99,8 +147,10 @@ public class XsdParser {
         String ref = element.getAttribute("ref");
         String typeAttr = element.getAttribute("type");
         String type = stripNamespace(typeAttr);
+        String minOccurs = element.getAttribute("minOccurs");
+        String maxOccurs = element.getAttribute("maxOccurs");
 
-        XsdElement xsdElement = new XsdElement(name, type, ref);
+        XsdElement xsdElement = new XsdElement(name, type, ref, minOccurs, maxOccurs);
 
         NodeList ctNodes = element.getElementsByTagNameNS("*", "complexType");
         if (ctNodes.getLength() > 0) {

@@ -6,16 +6,16 @@ import java.util.List;
 import java.util.Map;
 
 public class XsdModel {
-    private final List<XsdElement> rootElements = new ArrayList<>();
+    private final Map<String, XsdElement> globalElements = new HashMap<>();
     private final Map<String, XsdComplexType> complexTypes = new HashMap<>();
     private final Map<String, XsdSimpleType> simpleTypes = new HashMap<>();
 
-    public void addRootElement(XsdElement element) {
-        rootElements.add(element);
+    public void addGlobalElement(XsdElement element) {
+        globalElements.put(element.getName(), element);
     }
 
-    public List<XsdElement> getRootElements() {
-        return rootElements;
+    public Map<String, XsdElement> getGlobalElements() {
+        return globalElements;
     }
 
     public void addComplexType(XsdComplexType type) {
