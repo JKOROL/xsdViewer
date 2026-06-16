@@ -25,7 +25,6 @@ import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 
 public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
@@ -33,6 +32,8 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
     private final VirtualFile file;
     private final JComponent component;
     private Tree tree;
+
+    private XsdViewerSettings.SettingsListener settingsListener;
 
     public XsdFileEditor(@NotNull Project project, @NotNull VirtualFile file) {
         this.project = project;
@@ -113,7 +114,20 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
                 }
             });
 
-            panel.add(searchTextField, BorderLayout.NORTH);
+            this.settingsListener = new XsdViewerSettings.SettingsListener() {
+                @Override
+                public void settingsChanged() {
+                    if (tree != null) {
+                        tree.updateUI();
+                    }
+                }
+            };
+            XsdViewerSettings.getInstance().addSettingsListener(settingsListener);
+
+            JPanel topPanel = new JPanel(new BorderLayout());
+            topPanel.add(searchTextField, BorderLayout.CENTER);
+
+            panel.add(topPanel, BorderLayout.NORTH);
             panel.add(ScrollPaneFactory.createScrollPane(tree), BorderLayout.CENTER);
 
             searchTextField.setToolTipText(MyMessageBundle.message("search.placeholder"));
@@ -256,6 +270,9 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
 
     @Override
     public void dispose() {
+        if (settingsListener != null) {
+            XsdViewerSettings.getInstance().removeSettingsListener(settingsListener);
+        }
     }
 
     @Override

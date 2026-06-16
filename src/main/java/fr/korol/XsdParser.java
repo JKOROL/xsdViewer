@@ -115,14 +115,14 @@ public class XsdParser {
         for (int i = 0; i < extensions.getLength(); i++) {
             Element extension = (Element) extensions.item(i);
             String baseAttr = extension.getAttribute("base");
-            complexType.setBaseType(stripNamespace(baseAttr));
+            complexType.setBaseType(baseAttr);
         }
 
         NodeList restrictions = ctElement.getElementsByTagNameNS("*", "restriction");
         for (int i = 0; i < restrictions.getLength(); i++) {
             Element restriction = (Element) restrictions.item(i);
             String baseAttr = restriction.getAttribute("base");
-            complexType.setBaseType(stripNamespace(baseAttr));
+            complexType.setBaseType(baseAttr);
         }
 
         NodeList nestedElements = ctElement.getElementsByTagNameNS("*", "element");
@@ -138,7 +138,7 @@ public class XsdParser {
             Element attr = (Element) attributes.item(i);
             String attrName = attr.getAttribute("name");
             if (!attrName.isEmpty()) {
-                String attrType = stripNamespace(attr.getAttribute("type"));
+                String attrType = attr.getAttribute("type");
                 boolean required = "required".equals(attr.getAttribute("use"));
                 XsdAttribute xsdAttribute = new XsdAttribute(attrName, attrType, required);
                 xsdAttribute.setDocumentation(extractDocumentation(attr));
@@ -150,8 +150,7 @@ public class XsdParser {
     private XsdElement parseElement(Element element, XsdModel model) {
         String name = element.getAttribute("name");
         String ref = element.getAttribute("ref");
-        String typeAttr = element.getAttribute("type");
-        String type = stripNamespace(typeAttr);
+        String type = element.getAttribute("type");
         String minOccurs = element.getAttribute("minOccurs");
         String maxOccurs = element.getAttribute("maxOccurs");
 

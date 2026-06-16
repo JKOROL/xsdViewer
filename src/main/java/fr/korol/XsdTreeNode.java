@@ -12,16 +12,20 @@ import java.util.Set;
 
 public class XsdTreeNode extends DefaultMutableTreeNode {
     private final String displayName;
+    private final String fullDisplayName;
     private final String type;
+    private final String fullType;
     private final boolean isAttribute;
     private final String minOccurs;
     private final String maxOccurs;
     private final boolean required;
     private final String documentation;
 
-    public XsdTreeNode(String displayName, String type, boolean isAttribute, String minOccurs, String maxOccurs, boolean required, String documentation) {
+    public XsdTreeNode(String displayName, String fullDisplayName, String type, String fullType, boolean isAttribute, String minOccurs, String maxOccurs, boolean required, String documentation) {
         this.displayName = displayName;
+        this.fullDisplayName = fullDisplayName;
         this.type = type;
+        this.fullType = fullType;
         this.isAttribute = isAttribute;
         this.minOccurs = minOccurs;
         this.maxOccurs = maxOccurs;
@@ -36,7 +40,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
         }
 
         if (rootElement == null) {
-            return new XsdTreeNode(MyMessageBundle.message("editor.noroot"), null, false, null, null, false, null);
+            return new XsdTreeNode(MyMessageBundle.message("editor.noroot"), MyMessageBundle.message("editor.noroot"), null, null, false, null, null, false, null);
         }
 
         return processElement(rootElement, model, 0, new HashSet<>());
@@ -44,25 +48,29 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
 
     private static XsdTreeNode processElement(XsdElement element, XsdModel model, int depth, Set<String> visitedTypes) {
         if (depth > 15) {
-            return new XsdTreeNode(MyMessageBundle.message("editor.depth",depth), null, false, null, null, false, null);
+            return new XsdTreeNode(MyMessageBundle.message("editor.depth",depth), MyMessageBundle.message("editor.depth",depth), null, null, false, null, null, false, null);
         }
 
         String name = element.getName();
+        String fullName = element.getFullName();
         String ref = element.getRef();
+        String fullRef = element.getFullRef();
         String type = element.getType();
+        String fullType = element.getFullType();
         String minOccurs = element.getMinOccurs();
         String maxOccurs = element.getMaxOccurs();
         XsdComplexType anonymousType = element.getAnonymousType();
 
-        String displayName = (name != null && !name.isEmpty()) ? name : (ref != null && !ref.isEmpty() ? stripNamespace(ref) : "unknown");
+        String displayName = (name != null && !name.isEmpty()) ? name : (ref != null && !ref.isEmpty() ? ref : "unknown");
+        String fullDisplayName = (fullName != null && !fullName.isEmpty()) ? fullName : (fullRef != null && !fullRef.isEmpty() ? fullRef : "unknown");
         String documentation = element.getDocumentation();
 
-        if (ref != null && !ref.isEmpty()) {
-            String refName = stripNamespace(ref);
-            XsdElement globalEl = model.getGlobalElements().get(refName);
+        if (fullRef != null && !fullRef.isEmpty()) {
+            XsdElement globalEl = model.getGlobalElements().get(ref);
             if (globalEl != null) {
-                if (globalEl.getType() != null && !globalEl.getType().isEmpty()) {
+                if (globalEl.getFullType() != null && !globalEl.getFullType().isEmpty()) {
                     type = globalEl.getType();
+                    fullType = globalEl.getFullType();
                 } else if (globalEl.getAnonymousType() != null) {
                     anonymousType = globalEl.getAnonymousType();
                 }
@@ -73,23 +81,23 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
         }
 
         if (documentation == null || documentation.isEmpty()) {
-            if (type != null && model.getComplexTypes().containsKey(type)) {
+            if (fullType != null && model.getComplexTypes().containsKey(type)) {
                 documentation = model.getComplexTypes().get(type).getDocumentation();
-            } else if (type != null && model.getSimpleTypes().containsKey(type)) {
+            } else if (fullType != null && model.getSimpleTypes().containsKey(type)) {
                 documentation = model.getSimpleTypes().get(type).getDocumentation();
             }
         }
 
-        XsdTreeNode node = new XsdTreeNode(displayName, type, false, minOccurs, maxOccurs, false, documentation);
+        XsdTreeNode node = new XsdTreeNode(displayName, fullDisplayName, type, fullType, false, minOccurs, maxOccurs, false, documentation);
 
-        if (type != null && !type.isEmpty()) {
+        if (fullType != null && !fullType.isEmpty()) {
             if (model.getComplexTypes().containsKey(type)) {
                 if (!visitedTypes.contains(type)) {
                     visitedTypes.add(type);
                     addComplexTypeChildren(node, model.getComplexTypes().get(type), model, depth + 1, visitedTypes);
                     visitedTypes.remove(type);
                 } else {
-                    node.add(new XsdTreeNode(MyMessageBundle.message("editor.cyclic",type), null, false, null, null, false, null));
+                    node.add(new XsdTreeNode(MyMessageBundle.message("editor.cyclic",type), MyMessageBundle.message("editor.cyclic",type), null, null, false, null, null, false, null));
                 }
             }
         } else if (anonymousType != null) {
@@ -110,7 +118,7 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
         }
 
         for (XsdAttribute attr : complexType.getAttributes()) {
-            node.add(new XsdTreeNode("@" + attr.getName(), attr.getType(), true, null, null, attr.isRequired(), attr.getDocumentation()));
+            node.add(new XsdTreeNode("@" + attr.getName(), "@" + attr.getFullName(), attr.getType(), attr.getFullType(), true, null, null, attr.isRequired(), attr.getDocumentation()));
         }
 
         for (XsdElement nested : complexType.getElements()) {
@@ -124,11 +132,11 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
     }
 
     public String getDisplayName() {
-        return displayName;
+        return XsdViewerSettings.getInstance().isShowNamespaces() ? fullDisplayName : displayName;
     }
 
     public String getType() {
-        return type;
+        return XsdViewerSettings.getInstance().isShowNamespaces() ? fullType : type;
     }
 
     public boolean isAttribute() {

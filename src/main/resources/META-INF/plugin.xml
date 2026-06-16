@@ -25,6 +25,8 @@
     <!-- Extensions defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="fr.korol.XsdViewerSettings"/>
+        <applicationConfigurable instance="fr.korol.XsdViewerConfigurable"/>
         <fileEditorProvider implementation="fr.korol.XsdFileEditorProvider"/>
         <toolWindow id="XSD Search Results" anchor="bottom" factoryClass="fr.korol.XsdSearchToolWindowFactory" icon="AllIcons.Actions.Search"/>
     </extensions>

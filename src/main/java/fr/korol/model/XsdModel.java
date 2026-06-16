@@ -12,6 +12,9 @@ public class XsdModel {
 
     public void addGlobalElement(XsdElement element) {
         globalElements.put(element.getName(), element);
+        if (element.getFullName() != null) {
+            globalElements.put(element.getFullName(), element);
+        }
     }
 
     public Map<String, XsdElement> getGlobalElements() {
@@ -20,6 +23,9 @@ public class XsdModel {
 
     public void addComplexType(XsdComplexType type) {
         complexTypes.put(type.getName(), type);
+        if (type.getFullName() != null) {
+            complexTypes.put(type.getFullName(), type);
+        }
     }
 
     public Map<String, XsdComplexType> getComplexTypes() {
@@ -28,6 +34,9 @@ public class XsdModel {
 
     public void addSimpleType(XsdSimpleType type) {
         simpleTypes.put(type.getName(), type);
+        if (type.getFullName() != null) {
+            simpleTypes.put(type.getFullName(), type);
+        }
     }
 
     public Map<String, XsdSimpleType> getSimpleTypes() {

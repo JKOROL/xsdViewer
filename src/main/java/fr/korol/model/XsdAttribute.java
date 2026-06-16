@@ -13,11 +13,24 @@ public class XsdAttribute {
     }
 
     public String getName() {
+        return stripNamespace(name);
+    }
+
+    public String getFullName() {
         return name;
     }
 
     public String getType() {
+        return stripNamespace(type);
+    }
+
+    public String getFullType() {
         return type;
+    }
+
+    private String stripNamespace(String value) {
+        if (value == null) return null;
+        return value.contains(":") ? value.substring(value.indexOf(':') + 1) : value;
     }
 
     public boolean isRequired() {
