@@ -11,6 +11,9 @@ import com.intellij.ui.SearchTextField;
 import com.intellij.ui.treeStructure.Tree;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
+import com.intellij.ui.PopupHandler;
+import com.intellij.openapi.ide.CopyPasteManager;
+import com.intellij.util.ui.TextTransferable;
 import fr.korol.model.XsdModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -65,6 +68,39 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
             ToolTipManager.sharedInstance().registerComponent(tree);
             tree.setRootVisible(true);
             tree.setCellRenderer(new XsdTreeNode.XsdTreeCellRenderer());
+
+            tree.addMouseListener(new PopupHandler() {
+                @Override
+                public void invokePopup(Component comp, int x, int y) {
+                    TreePath path = tree.getPathForLocation(x, y);
+                    if (path != null && path.getLastPathComponent() instanceof XsdTreeNode node) {
+                        JPopupMenu popupMenu = new JPopupMenu();
+                        JMenuItem copyPathItem = new JMenuItem(MyMessageBundle.message("menu.copy.path"));
+                        copyPathItem.addActionListener(e -> {
+                            StringBuilder pathBuilder = new StringBuilder();
+                            TreeNode[] nodes = node.getPath();
+                            for (int i = 0; i < nodes.length; i++) {
+                                if (nodes[i] instanceof XsdTreeNode pNode) {
+                                    pathBuilder.append(pNode.getDisplayName());
+                                    if (i < nodes.length - 1) {
+                                        pathBuilder.append("/");
+                                    }
+                                }
+                            }
+                            CopyPasteManager.getInstance().setContents(new TextTransferable(pathBuilder.toString()));
+                        });
+                        popupMenu.add(copyPathItem);
+
+                        JMenuItem copyElementNameItem = new JMenuItem(MyMessageBundle.message("menu.copy.elementName"));
+                        copyElementNameItem.addActionListener(e -> {
+                            CopyPasteManager.getInstance().setContents(new TextTransferable(node.getDisplayName()));
+                        });
+                        popupMenu.add(copyElementNameItem);
+
+                        popupMenu.show(comp, x, y);
+                    }
+                }
+            });
 
             JPanel panel = new JPanel(new BorderLayout());
             SearchTextField searchTextField = new SearchTextField();
