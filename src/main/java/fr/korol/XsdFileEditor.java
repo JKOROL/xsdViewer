@@ -141,9 +141,15 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
     private void performSearch(String text) {
         if (text == null || text.isEmpty() || tree == null) return;
 
-        List<XsdTreeNode> results = new ArrayList<>();
+        List<XsdTreeNode> results;
         XsdTreeNode root = (XsdTreeNode) tree.getModel().getRoot();
-        searchNodes(root, text.toLowerCase(), results);
+        
+        if (text.startsWith("/") || text.startsWith(".//") || text.startsWith(".//") || text.contains("[") || text.contains("*")) {
+            results = XsdXPathSearcher.search(root, text);
+        } else {
+            results = new ArrayList<>();
+            searchNodes(root, text.toLowerCase(), results);
+        }
 
         if (results.isEmpty()) {
             JOptionPane.showMessageDialog(component, MyMessageBundle.message("search.no.results", text));
