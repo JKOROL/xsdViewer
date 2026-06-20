@@ -86,6 +86,27 @@ public class XsdParser {
             if (!name.isEmpty()) {
                 XsdSimpleType simpleType = new XsdSimpleType(name);
                 simpleType.setDocumentation(extractDocumentation(st));
+            
+                NodeList restrictionList = st.getElementsByTagNameNS("*", "restriction");
+                if (restrictionList.getLength() > 0) {
+                    Element restriction = (Element) restrictionList.item(0);
+                    NodeList facets = restriction.getChildNodes();
+                    for (int j = 0; j < facets.getLength(); j++) {
+                        Node facet = facets.item(j);
+                        if (facet instanceof Element fElement) {
+                            String facetName = fElement.getLocalName();
+                            String facetValue = fElement.getAttribute("value");
+                            if (facetName != null && !facetName.isEmpty() && facetValue != null && !facetValue.isEmpty()) {
+                                if ("enumeration".equals(facetName)) {
+                                    simpleType.addEnumeration(facetValue, extractDocumentation(fElement));
+                                } else {
+                                    simpleType.addRestriction(facetName, facetValue);
+                                }
+                            }
+                        }
+                    }
+                }
+            
                 model.addSimpleType(simpleType);
             }
         }

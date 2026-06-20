@@ -32,6 +32,7 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
     private final VirtualFile file;
     private final JComponent component;
     private Tree tree;
+    private XsdModel model;
 
     private XsdViewerSettings.SettingsListener settingsListener;
 
@@ -44,7 +45,7 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
     private JComponent createComponent() {
         try {
             XsdParser parser = new XsdParser();
-            XsdModel model = parser.parse(file);
+            this.model = parser.parse(file);
             String rootName = file.getNameWithoutExtension();
             // Handle UBL naming convention like UBL-ApplicationResponse-2.1 -> ApplicationResponse
             if (rootName.startsWith("UBL-")) {
@@ -69,6 +70,18 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
             ToolTipManager.sharedInstance().registerComponent(tree);
             tree.setRootVisible(true);
             tree.setCellRenderer(new XsdTreeNode.XsdTreeCellRenderer());
+
+            tree.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseClicked(java.awt.event.MouseEvent e) {
+                    if (e.getClickCount() == 2) {
+                        TreePath path = tree.getPathForLocation(e.getX(), e.getY());
+                        if (path != null && path.getLastPathComponent() instanceof XsdTreeNode node) {
+                            showElementDetails(node);
+                        }
+                    }
+                }
+            });
 
             tree.addMouseListener(new PopupHandler() {
                 @Override
@@ -136,6 +149,11 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
         } catch (Exception e) {
             return new JLabel(MyMessageBundle.message("error.reading.file", e.getMessage()));
         }
+    }
+
+    private void showElementDetails(XsdTreeNode node) {
+        ElementDetailsDialog dialog = new ElementDetailsDialog(node, model);
+        dialog.show();
     }
 
     private void performSearch(String text) {
