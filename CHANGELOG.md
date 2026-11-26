@@ -2,9 +2,9 @@
 
 # XsdViewer Changelog
 
-## [Unreleased]
+## Unreleased
 
-## [1.2.0] - 2026-11-26
+## 1.2.0 - 2026-11-26
 
 ### Added
 
@@ -26,7 +26,7 @@
 - `schemaLocation` of imports and includes now resolves backslash paths, absolute paths and `file:` URLs relative to the including file
 - `xs:redefine` and `xs:override` schemas are now loaded
 
-## [1.1.0] - 2026-06-17
+## 1.1.0 - 2026-06-17
 
 ### Added
 
@@ -34,7 +34,7 @@
 - Setting to show namespaces
 - XPath search (`/Root/Elem`, `//Elem[@attr]`, `//Elem[1]`)
 
-## [1.0.0] - 2026-06-15
+## 1.0.0 - 2026-06-15
 
 ### Added
 
