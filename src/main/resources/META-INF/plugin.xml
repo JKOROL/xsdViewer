@@ -29,6 +29,13 @@
         <applicationConfigurable instance="fr.korol.XsdViewerConfigurable"/>
         <fileEditorProvider implementation="fr.korol.XsdFileEditorProvider"/>
         <toolWindow id="XSD Search Results" anchor="bottom" factoryClass="fr.korol.XsdSearchToolWindowFactory" icon="AllIcons.Actions.Search"/>
+        <toolWindow id="XSD Library" anchor="right" factoryClass="fr.korol.XsdLibraryToolWindowFactory" icon="AllIcons.FileTypes.Xml"/>
     </extensions>
+
+    <actions>
+        <action id="fr.korol.OpenFromLibrary" class="fr.korol.OpenFromLibraryAction" text="Open XSD from Library...">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
 
 </idea-plugin>

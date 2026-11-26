@@ -24,6 +24,7 @@ public class XsdViewerSettings implements PersistentStateComponent<XsdViewerSett
 
     public static class State {
         public boolean showNamespaces = false;
+        public String libraryPath = "";
     }
 
     private State myState = new State();
@@ -49,6 +50,17 @@ public class XsdViewerSettings implements PersistentStateComponent<XsdViewerSett
     public void setShowNamespaces(boolean showNamespaces) {
         if (myState.showNamespaces != showNamespaces) {
             myState.showNamespaces = showNamespaces;
+            notifyListeners();
+        }
+    }
+
+    public String getLibraryPath() {
+        return myState.libraryPath;
+    }
+
+    public void setLibraryPath(String libraryPath) {
+        if (!myState.libraryPath.equals(libraryPath)) {
+            myState.libraryPath = libraryPath;
             notifyListeners();
         }
     }

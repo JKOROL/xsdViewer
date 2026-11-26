@@ -1,7 +1,9 @@
 package fr.korol;
 
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import fr.korol.model.*;
+import org.jetbrains.annotations.Nullable;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -11,7 +13,10 @@ import org.xml.sax.InputSource;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.StringReader;
+import java.net.URI;
+import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class XsdParser {
@@ -37,33 +42,13 @@ public class XsdParser {
             doc = builder.parse(is);
         }
 
-        // Handle imports and includes
-        NodeList imports = doc.getElementsByTagNameNS("*", "import");
-        for (int i = 0; i < imports.getLength(); i++) {
-            Element imp = (Element) imports.item(i);
-            String schemaLocation = imp.getAttribute("schemaLocation");
-            if (!schemaLocation.isEmpty()) {
-                VirtualFile parent = file.getParent();
-                if (parent != null) {
-                    VirtualFile importedFile = parent.findFileByRelativePath(schemaLocation);
-                    if (importedFile != null) {
-                        parseInternal(importedFile, model);
-                    }
-                }
-            }
-        }
-
-        NodeList includes = doc.getElementsByTagNameNS("*", "include");
-        for (int i = 0; i < includes.getLength(); i++) {
-            Element inc = (Element) includes.item(i);
-            String schemaLocation = inc.getAttribute("schemaLocation");
-            if (!schemaLocation.isEmpty()) {
-                VirtualFile parent = file.getParent();
-                if (parent != null) {
-                    VirtualFile includedFile = parent.findFileByRelativePath(schemaLocation);
-                    if (includedFile != null) {
-                        parseInternal(includedFile, model);
-                    }
+        // Handle imports, includes, redefines and overrides
+        for (String tag : List.of("import", "include", "redefine", "override")) {
+            NodeList refs = doc.getElementsByTagNameNS("*", tag);
+            for (int i = 0; i < refs.getLength(); i++) {
+                String schemaLocation = ((Element) refs.item(i)).getAttribute("schemaLocation");
+                if (!schemaLocation.isEmpty()) {
+                    parseInternal(resolve(file, schemaLocation), model);
                 }
             }
         }
@@ -128,6 +113,21 @@ public class XsdParser {
                 XsdElement xsdElement = parseElement(element, model);
                 model.addGlobalElement(xsdElement);
             }
+        }
+    }
+
+    // Resolves schemaLocation against the including file: relative (with ../ or \), absolute or file: URL.
+    private static @Nullable VirtualFile resolve(VirtualFile file, String schemaLocation) {
+        VirtualFile parent = file.getParent();
+        if (parent == null) return null;
+        if (!file.isInLocalFileSystem()) return parent.findFileByRelativePath(schemaLocation);
+        try {
+            Path path = schemaLocation.startsWith("file:")
+                    ? Path.of(URI.create(schemaLocation))
+                    : Path.of(parent.getPath()).resolve(schemaLocation).normalize();
+            return LocalFileSystem.getInstance().findFileByNioFile(path);
+        } catch (IllegalArgumentException e) { // http(s) locations, malformed paths
+            return null;
         }
     }
 
