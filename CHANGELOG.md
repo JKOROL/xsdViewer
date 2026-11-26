@@ -11,7 +11,15 @@
 - Element details dialog (double-click a node in the tree)
 - XSD library folder setting (Settings > XSD Viewer) to browse XSD files outside the current project
 - "XSD Library" tool window listing every XSD of the library folder
-- Tools > Open XSD from Library... action
+- Tools > Open XSD/DTD from Library... action
+- DTD support: `.dtd` files open in the tree view with search, XPath, details dialog and tooltips (from comments)
+- The XSD library tool window and the Open from Library action also list `.dtd` files
+
+### Changed
+
+- Compatible with IntelliJ IDEA 2026.3 while still supporting 2026.1 and later
+- Editor tab renamed from "XSD Tree" to "Schema Tree"
+- DTD trees are capped at 50,000 nodes ("Tree too large, truncated") so heavily recursive DTDs open instantly
 
 ### Fixed
 
