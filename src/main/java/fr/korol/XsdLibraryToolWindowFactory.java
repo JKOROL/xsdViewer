@@ -80,7 +80,7 @@ public class XsdLibraryToolWindowFactory implements ToolWindowFactory, DumbAware
             Path root = Path.of(libraryPath);
             if (!Files.isDirectory(root)) return;
             try (Stream<Path> files = Files.walk(root)) {
-                files.filter(p -> p.getFileName().toString().toLowerCase().endsWith(".xsd"))
+                files.filter(p -> p.getFileName().toString().toLowerCase().matches(".*\\.(xsd|dtd)"))
                         .sorted()
                         .forEach(p -> listModel.addElement(new Entry(p, root.relativize(p).toString())));
             }

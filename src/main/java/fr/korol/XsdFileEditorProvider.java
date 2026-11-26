@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 public class XsdFileEditorProvider implements FileEditorProvider, DumbAware {
     @Override
     public boolean accept(@NotNull Project project, @NotNull VirtualFile file) {
-        return "xsd".equals(file.getExtension());
+        return "xsd".equals(file.getExtension()) || "dtd".equals(file.getExtension());
     }
 
     @Override

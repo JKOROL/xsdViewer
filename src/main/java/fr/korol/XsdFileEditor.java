@@ -44,18 +44,24 @@ public class XsdFileEditor extends UserDataHolderBase implements FileEditor {
 
     private JComponent createComponent() {
         try {
-            XsdParser parser = new XsdParser();
-            this.model = parser.parse(file);
-            String rootName = file.getNameWithoutExtension();
-            // Handle UBL naming convention like UBL-ApplicationResponse-2.1 -> ApplicationResponse
-            if (rootName.startsWith("UBL-")) {
-                rootName = rootName.substring(4);
-                if (rootName.contains("-")) {
-                    rootName = rootName.substring(0, rootName.indexOf("-"));
+            XsdTreeNode rootNode;
+            if ("dtd".equals(file.getExtension())) {
+                DtdParser parser = new DtdParser();
+                this.model = parser.parse(file);
+                rootNode = XsdTreeNode.createTree(model, parser.getRootNames(), file.getName());
+            } else {
+                XsdParser parser = new XsdParser();
+                this.model = parser.parse(file);
+                String rootName = file.getNameWithoutExtension();
+                // Handle UBL naming convention like UBL-ApplicationResponse-2.1 -> ApplicationResponse
+                if (rootName.startsWith("UBL-")) {
+                    rootName = rootName.substring(4);
+                    if (rootName.contains("-")) {
+                        rootName = rootName.substring(0, rootName.indexOf("-"));
+                    }
                 }
+                rootNode = XsdTreeNode.createTree(model, rootName);
             }
-
-            XsdTreeNode rootNode = XsdTreeNode.createTree(model, rootName);
             tree = new Tree(new DefaultTreeModel(rootNode)) {
                 @Override
                 public String getToolTipText(java.awt.event.MouseEvent event) {

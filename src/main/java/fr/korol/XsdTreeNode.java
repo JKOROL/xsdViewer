@@ -7,7 +7,9 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class XsdTreeNode extends DefaultMutableTreeNode {
@@ -43,86 +45,142 @@ public class XsdTreeNode extends DefaultMutableTreeNode {
             return new XsdTreeNode(MyMessageBundle.message("editor.noroot"), MyMessageBundle.message("editor.noroot"), null, null, false, null, null, false, null);
         }
 
-        return processElement(rootElement, model, 0, new HashSet<>());
+        Builder builder = new Builder(model, Integer.MAX_VALUE);
+        XsdTreeNode root = builder.processElement(rootElement, 0, Set.of());
+        builder.expandAll();
+        return root;
     }
 
-    private static XsdTreeNode processElement(XsdElement element, XsdModel model, int depth, Set<String> visitedTypes) {
-        if (depth > 15) {
-            return new XsdTreeNode(MyMessageBundle.message("editor.depth",depth), MyMessageBundle.message("editor.depth",depth), null, null, false, null, null, false, null);
-        }
-
-        String name = element.getName();
-        String fullName = element.getFullName();
-        String ref = element.getRef();
-        String fullRef = element.getFullRef();
-        String type = element.getType();
-        String fullType = element.getFullType();
-        String minOccurs = element.getMinOccurs();
-        String maxOccurs = element.getMaxOccurs();
-        XsdComplexType anonymousType = element.getAnonymousType();
-
-        String displayName = (name != null && !name.isEmpty()) ? name : (ref != null && !ref.isEmpty() ? ref : "unknown");
-        String fullDisplayName = (fullName != null && !fullName.isEmpty()) ? fullName : (fullRef != null && !fullRef.isEmpty() ? fullRef : "unknown");
-        String documentation = element.getDocumentation();
-
-        if (fullRef != null && !fullRef.isEmpty()) {
-            XsdElement globalEl = model.getGlobalElements().get(ref);
-            if (globalEl != null) {
-                if (globalEl.getFullType() != null && !globalEl.getFullType().isEmpty()) {
-                    type = globalEl.getType();
-                    fullType = globalEl.getFullType();
-                } else if (globalEl.getAnonymousType() != null) {
-                    anonymousType = globalEl.getAnonymousType();
-                }
-                if (documentation == null || documentation.isEmpty()) {
-                    documentation = globalEl.getDocumentation();
-                }
+    /**
+     * Tree for a DTD: several roots are grouped under a node named {@code label}, and the size is capped because
+     * mixed content (every inline element containing every other one) grows factorially with depth.
+     */
+    public static XsdTreeNode createTree(XsdModel model, List<String> rootElementNames, String label) {
+        Builder builder = new Builder(model, MAX_DTD_NODES);
+        XsdTreeNode root;
+        if (rootElementNames.isEmpty()) {
+            return createTree(model, "");
+        } else if (rootElementNames.size() == 1) {
+            root = builder.processElement(model.getGlobalElements().get(rootElementNames.get(0)), 0, Set.of());
+        } else {
+            root = new XsdTreeNode(label, label, null, null, false, null, null, false, null);
+            for (String name : rootElementNames) {
+                root.add(builder.processElement(model.getGlobalElements().get(name), 0, Set.of()));
             }
         }
+        builder.expandAll();
+        return root;
+    }
 
-        if (documentation == null || documentation.isEmpty()) {
-            if (fullType != null && model.getComplexTypes().containsKey(type)) {
-                documentation = model.getComplexTypes().get(type).getDocumentation();
-            } else if (fullType != null && model.getSimpleTypes().containsKey(type)) {
-                documentation = model.getSimpleTypes().get(type).getDocumentation();
-            }
+    // ponytail: hard node cap, lazy expansion on tree-expand if users need the full depth of huge DTDs
+    private static final int MAX_DTD_NODES = 50_000;
+
+    private record Pending(XsdTreeNode node, XsdComplexType type, int depth, Set<String> visitedTypes) {}
+
+    /** Builds breadth-first so a node budget truncates evenly instead of starving later branches. */
+    private static class Builder {
+        private final XsdModel model;
+        private final int maxNodes;
+        private final ArrayDeque<Pending> queue = new ArrayDeque<>();
+        private int nodeCount;
+
+        Builder(XsdModel model, int maxNodes) {
+            this.model = model;
+            this.maxNodes = maxNodes;
         }
 
-        XsdTreeNode node = new XsdTreeNode(displayName, fullDisplayName, type, fullType, false, minOccurs, maxOccurs, false, documentation);
-
-        if (fullType != null && !fullType.isEmpty()) {
-            if (model.getComplexTypes().containsKey(type)) {
-                if (!visitedTypes.contains(type)) {
-                    visitedTypes.add(type);
-                    addComplexTypeChildren(node, model.getComplexTypes().get(type), model, depth + 1, visitedTypes);
-                    visitedTypes.remove(type);
+        void expandAll() {
+            while (!queue.isEmpty()) {
+                Pending p = queue.poll();
+                if (nodeCount >= maxNodes) {
+                    p.node().add(new XsdTreeNode(MyMessageBundle.message("editor.truncated"), MyMessageBundle.message("editor.truncated"), null, null, false, null, null, false, null));
                 } else {
-                    node.add(new XsdTreeNode(MyMessageBundle.message("editor.cyclic",type), MyMessageBundle.message("editor.cyclic",type), null, null, false, null, null, false, null));
+                    addComplexTypeChildren(p.node(), p.type(), p.depth(), p.visitedTypes());
                 }
             }
-        } else if (anonymousType != null) {
-            addComplexTypeChildren(node, anonymousType, model, depth + 1, visitedTypes);
         }
 
-        return node;
-    }
+        XsdTreeNode processElement(XsdElement element, int depth, Set<String> visitedTypes) {
+            nodeCount++;
+            if (depth > 15) {
+                return new XsdTreeNode(MyMessageBundle.message("editor.depth",depth), MyMessageBundle.message("editor.depth",depth), null, null, false, null, null, false, null);
+            }
 
-    private static void addComplexTypeChildren(XsdTreeNode node, XsdComplexType complexType, XsdModel model, int depth, Set<String> visitedTypes) {
-        String baseType = complexType.getBaseType();
-        if (baseType != null && !baseType.isEmpty() && model.getComplexTypes().containsKey(baseType)) {
-            if (!visitedTypes.contains(baseType)) {
-                visitedTypes.add(baseType);
-                addComplexTypeChildren(node, model.getComplexTypes().get(baseType), model, depth, visitedTypes);
-                visitedTypes.remove(baseType);
+            String name = element.getName();
+            String fullName = element.getFullName();
+            String ref = element.getRef();
+            String fullRef = element.getFullRef();
+            String type = element.getType();
+            String fullType = element.getFullType();
+            String minOccurs = element.getMinOccurs();
+            String maxOccurs = element.getMaxOccurs();
+            XsdComplexType anonymousType = element.getAnonymousType();
+
+            String displayName = (name != null && !name.isEmpty()) ? name : (ref != null && !ref.isEmpty() ? ref : "unknown");
+            String fullDisplayName = (fullName != null && !fullName.isEmpty()) ? fullName : (fullRef != null && !fullRef.isEmpty() ? fullRef : "unknown");
+            String documentation = element.getDocumentation();
+
+            if (fullRef != null && !fullRef.isEmpty()) {
+                XsdElement globalEl = model.getGlobalElements().get(ref);
+                if (globalEl != null) {
+                    if (globalEl.getFullType() != null && !globalEl.getFullType().isEmpty()) {
+                        type = globalEl.getType();
+                        fullType = globalEl.getFullType();
+                    } else if (globalEl.getAnonymousType() != null) {
+                        anonymousType = globalEl.getAnonymousType();
+                    }
+                    if (documentation == null || documentation.isEmpty()) {
+                        documentation = globalEl.getDocumentation();
+                    }
+                }
+            }
+
+            if (documentation == null || documentation.isEmpty()) {
+                if (fullType != null && model.getComplexTypes().containsKey(type)) {
+                    documentation = model.getComplexTypes().get(type).getDocumentation();
+                } else if (fullType != null && model.getSimpleTypes().containsKey(type)) {
+                    documentation = model.getSimpleTypes().get(type).getDocumentation();
+                }
+            }
+
+            XsdTreeNode node = new XsdTreeNode(displayName, fullDisplayName, type, fullType, false, minOccurs, maxOccurs, false, documentation);
+
+            if (fullType != null && !fullType.isEmpty()) {
+                if (model.getComplexTypes().containsKey(type)) {
+                    if (!visitedTypes.contains(type)) {
+                        queue.add(new Pending(node, model.getComplexTypes().get(type), depth + 1, with(visitedTypes, type)));
+                    } else {
+                        node.add(new XsdTreeNode(MyMessageBundle.message("editor.cyclic",type), MyMessageBundle.message("editor.cyclic",type), null, null, false, null, null, false, null));
+                    }
+                }
+            } else if (anonymousType != null) {
+                queue.add(new Pending(node, anonymousType, depth + 1, visitedTypes));
+            }
+
+            return node;
+        }
+
+        private void addComplexTypeChildren(XsdTreeNode node, XsdComplexType complexType, int depth, Set<String> visitedTypes) {
+            String baseType = complexType.getBaseType();
+            if (baseType != null && !baseType.isEmpty() && model.getComplexTypes().containsKey(baseType)) {
+                if (!visitedTypes.contains(baseType)) {
+                    addComplexTypeChildren(node, model.getComplexTypes().get(baseType), depth, with(visitedTypes, baseType));
+                }
+            }
+
+            for (XsdAttribute attr : complexType.getAttributes()) {
+                node.add(new XsdTreeNode("@" + attr.getName(), "@" + attr.getFullName(), attr.getType(), attr.getFullType(), true, null, null, attr.isRequired(), attr.getDocumentation()));
+            }
+
+            for (XsdElement nested : complexType.getElements()) {
+                node.add(processElement(nested, depth + 1, visitedTypes));
             }
         }
 
-        for (XsdAttribute attr : complexType.getAttributes()) {
-            node.add(new XsdTreeNode("@" + attr.getName(), "@" + attr.getFullName(), attr.getType(), attr.getFullType(), true, null, null, attr.isRequired(), attr.getDocumentation()));
-        }
-
-        for (XsdElement nested : complexType.getElements()) {
-            node.add(processElement(nested, model, depth + 1, visitedTypes));
+        private static Set<String> with(Set<String> set, String value) {
+            Set<String> copy = new HashSet<>(set);
+            copy.add(value);
+            return copy;
         }
     }
 

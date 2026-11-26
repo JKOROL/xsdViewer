@@ -25,7 +25,7 @@ public class OpenFromLibraryAction extends AnAction implements DumbAware {
             return;
         }
 
-        FileChooserDescriptor descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor("xsd").withRoots(root);
+        FileChooserDescriptor descriptor = FileChooserDescriptorFactory.singleFile().withExtensionFilter("XSD / DTD", "xsd", "dtd").withRoots(root);
         VirtualFile file = FileChooser.chooseFile(descriptor, project, root);
         if (file != null) open(project, file);
     }

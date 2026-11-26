@@ -13,7 +13,7 @@
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
     <description><![CDATA[
-        A simple XSD viewer for IntelliJ IDEA. Supports tree view, documentation tooltips, and searching within the XSD structure.
+        A simple XSD and DTD viewer for IntelliJ IDEA. Supports tree view, documentation tooltips, and searching within the schema structure.
         ]]></description>
 
     <!-- Product and plugin compatibility requirements.
@@ -33,7 +33,7 @@
     </extensions>
 
     <actions>
-        <action id="fr.korol.OpenFromLibrary" class="fr.korol.OpenFromLibraryAction" text="Open XSD from Library...">
+        <action id="fr.korol.OpenFromLibrary" class="fr.korol.OpenFromLibraryAction" text="Open XSD/DTD from Library...">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </action>
     </actions>
