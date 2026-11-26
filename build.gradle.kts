@@ -34,4 +34,8 @@ intellijPlatform {
             create(IntelliJPlatformType.IntellijIdea, "2026.3")
         }
     }
+    publishing {
+        // Marketplace personal access token, never committed: set INTELLIJ_PUBLISH_TOKEN before running publishPlugin
+        token = providers.environmentVariable("INTELLIJ_PUBLISH_TOKEN")
+    }
 }
