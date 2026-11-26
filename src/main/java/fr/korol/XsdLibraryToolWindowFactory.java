@@ -11,7 +11,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.ScrollPaneFactory;
-import com.intellij.ui.SimpleListCellRenderer;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
@@ -30,14 +29,18 @@ import java.util.stream.Stream;
 
 public class XsdLibraryToolWindowFactory implements ToolWindowFactory, DumbAware {
 
-    private record Entry(Path file, String label) {}
+    private record Entry(Path file, String label) {
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
         DefaultListModel<Entry> listModel = new DefaultListModel<>();
         JBList<Entry> list = new JBList<>(listModel);
         list.getEmptyText().setText(MyMessageBundle.message("library.empty"));
-        list.setCellRenderer(SimpleListCellRenderer.create("", Entry::label));
 
         list.addMouseListener(new MouseAdapter() {
             @Override

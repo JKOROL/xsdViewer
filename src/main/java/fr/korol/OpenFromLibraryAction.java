@@ -32,6 +32,8 @@ public class OpenFromLibraryAction extends AnAction implements DumbAware {
 
     static void open(@NotNull Project project, @NotNull VirtualFile file) {
         FileEditorManager manager = FileEditorManager.getInstance(project);
+        // ponytail: deprecated in 2026.3 but its replacement requestOpenFile changed signature since 2026.1;
+        // switch to requestOpenFile(file).thenRun(...) once sinceBuild >= 263
         manager.openFile(file, true);
         manager.setSelectedEditor(file, "xsd-tree-editor");
     }
